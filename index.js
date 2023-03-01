@@ -1,15 +1,28 @@
 const { REST, Routes } = require("discord.js");
 const { SlashCommandBuilder } = require("@discordjs/builders");
+const { createWorker } = require("tesseract.js");
 
 if (process.env.NODE_ENV !== "production") {
   require("dotenv").config();
 }
 
-const https = require("https");
+const parseImage = async (imageUrl) => {
+  const worker = await createWorker();
 
-const sendImage = new SlashCommandBuilder()
-  .setName("sendimage")
-  .setDescription("Sends an image")
+  (async () => {
+    await worker.loadLanguage("eng");
+    await worker.initialize("eng");
+    const {
+      data: { text },
+    } = await worker.recognize(imageUrl);
+    console.log(text);
+    await worker.terminate();
+  })();
+};
+
+const sendSchedule = new SlashCommandBuilder()
+  .setName("sendschedule")
+  .setDescription("Sends the schedule image")
   .addStringOption((option) =>
     option
       .setName("image")
@@ -22,7 +35,7 @@ const commands = [
     name: "bing",
     description: "Replies with Bong!",
   },
-  sendImage,
+  sendSchedule,
 ];
 
 const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
@@ -54,8 +67,9 @@ client.on("interactionCreate", async (interaction) => {
   if (interaction.commandName === "bing") {
     await interaction.reply("Bong!");
   }
-  if (interaction.commandName === "sendimage") {
+  if (interaction.commandName === "sendschedule") {
     const imageUrl = interaction.options.getString("image");
+    parseImage(imageUrl);
     await interaction.reply({ files: [imageUrl] });
   }
 });
